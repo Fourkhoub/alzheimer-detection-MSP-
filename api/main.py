@@ -19,28 +19,41 @@ model         = joblib.load('models/xgboost_final.pkl')
 scaler        = joblib.load('models/scaler.pkl')
 feature_names = joblib.load('models/feature_names.pkl')
 
+# Features continues : normalisées par StandardScaler
+# Les features binaires (Smoking, FamilyHistory…) sont exclues intentionnellement
+
 CONTINUOUS = ['Age', 'BMI', 'AlcoholConsumption', 'PhysicalActivity',
               'DietQuality', 'SleepQuality', 'SystolicBP', 'DiastolicBP',
               'CholesterolTotal', 'CholesterolLDL', 'CholesterolHDL',
               'CholesterolTriglycerides', 'MMSE', 'FunctionalAssessment', 'ADL']
 
 def severity(proba):
+    # Seuils alignés sur les pratiques de screening clinique Alzheimer
     if proba < 0.3:  return 'Risque faible'
     if proba < 0.6:  return 'Risque modéré'
     return 'Risque élevé'
 
 def get_prediction(patient_dict):
     df = pd.DataFrame([patient_dict])
+     #  compléter les features manquantes avec 0
+
     for col in feature_names:
         if col not in df.columns:
             df[col] = 0
     df = df[feature_names]
+
+    # Normalisation des features continues uniquement
+
     cont = [c for c in CONTINUOUS if c in df.columns]
     df[cont] = scaler.transform(df[cont])
     proba      = float(model.predict_proba(df)[0, 1])
     prediction = 'Alzheimer' if proba >= 0.5 else 'Non-Alzheimer'
+
+
     explainer  = shap.TreeExplainer(model)
     shap_vals  = explainer.shap_values(df)[0]
+
+     # Top 5 features par impact absolu
     top5 = sorted(zip(feature_names, shap_vals),
                   key=lambda x: abs(x[1]), reverse=True)[:5]
     return proba, prediction, top5, df

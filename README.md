@@ -9,7 +9,7 @@ Système de scoring basé sur XGBoost et données cliniques structurées.
 - Joan Steeve EDANDE OTYE
 
 ## Résultats
-- Accuracy : 96%
+- Précision : 96%
 - Recall Alzheimer : 94%
 - AUC-ROC : 0.94
 
